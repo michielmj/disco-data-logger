@@ -45,7 +45,7 @@ jobs:
 
       - name: Install package (editable) with dev extras
         run: |
-          pip install -e '.[dev]'
+          pip install -e '.[dev,parquet]'
 
       - name: Run tests
         run: pytest -q

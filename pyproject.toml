@@ -62,7 +62,7 @@ testpaths = ["tests"]
 [tool.cibuildwheel]
 skip = "*-win32 *-cp313t-* *-cp314t-* "  # exclude 32-bit and experimental python
 test-command = "pytest -q {project}/tests"
-test-extras = ["dev"]
+test-extras = ["dev", "parquet"]
 environment = { PIP_ONLY_BINARY = "numpy" }
 
 [tool.cibuildwheel.windows]
