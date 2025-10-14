@@ -63,7 +63,7 @@ testpaths = ["tests"]
 skip = "*-win32 *-cp313t-* *-cp314t-* *-cp314-*"
 test-command = "pytest -q {project}/tests"
 test-extras = ["dev", "parquet"]
-environment = { PIP_ONLY_BINARY = "numpy" }
+environment = { PIP_ONLY_BINARY = "numpy,pyarrow" }
 
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]
