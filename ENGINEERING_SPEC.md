@@ -8,9 +8,9 @@ High-performance logging library for Disco simulations. Records **sparse vectors
 - **Sparse vectors**: (indices: `np.uint32`, values: `np.float64`) per record.
 - **Streams**: multiple independent streams per run, each identified by labels (organisation, model, experiment, run, replication, entity, measure, logging_type, …).
 - **API (Python)**:
-  - `ExperimentLogger.register_stream(labels, epoch_scale, value_scale) -> stream_id`
-  - `ExperimentLogger.record(stream_id, epoch: float, indices: uint32[], values: float64[])`
-  - `ExperimentLogger.to_parquet(path)` (optional feature)
+  - `DataLogger.register_stream(labels, epoch_scale, value_scale) -> stream_id`
+  - `DataLogger.record(stream_id, epoch: float, indices: uint32[], values: float64[])`
+  - `DataLogger.to_parquet(path)` (optional feature)
 - **On-disk format**: rotating `.seg.zst` files (zstd-framed). One directory per run. Sidecar JSON files for stream labels and scales: `streams/<stream_id>.json`.
 - **Quantization**: fixed-point: `q = round(value / value_scale)` -> varint(ZigZag(q)). Epochs quantized by `epoch_scale` to integer ticks, then **delta** encoded varint(ZigZag(delta)).
 - **Indices encoding**: strictly increasing per record; encode `n`, then `first_idx`, then gaps `(idx[i] - idx[i-1] - 1)` as varints.
@@ -36,7 +36,7 @@ High-performance logging library for Disco simulations. Records **sparse vectors
     - compresses each frame into a **single zstd frame**
     - appends to current `.seg.zst`
     - rotates file at `rotate_bytes`
-- **ExperimentLogger (Python)**:
+- **DataLogger (Python)**:
   - Manages labels + writes `streams/<sid>.json`
   - Wraps LoggerCore, ensures `indices` sorted (if needed)
   - Decoding/parquet utilities
@@ -65,7 +65,7 @@ Where:
 
 ## 4. Public API (Python)
 ```python
-class ExperimentLogger:
+class DataLogger:
     def __init__(segments_dir: str|Path, ring_bytes=1<<27, rotate_bytes=256<<20, zstd_level=1): ...
 
     def register_stream(labels: dict, *, epoch_scale: float, value_scale: float) -> int: ...
