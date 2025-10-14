@@ -28,6 +28,8 @@ jobs:
       # - test command & extras
       # - environment (e.g., PIP_ONLY_BINARY=numpy)
       - name: Build wheels
+        env:
+          PIP_ONLY_BINARY: "numpy,pyarrow"
         run: python -m cibuildwheel --output-dir wheelhouse
 
       - name: Upload wheels
