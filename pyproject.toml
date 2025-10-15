@@ -74,6 +74,4 @@ archs = ["x86_64"]
 
 [tool.scikit-build.cmake.define]
 CMAKE_DOWNLOAD_TIMEOUT = 30
-
-[tool.scikit-build.cmake.define]
 PYBIND11_FINDPYTHON = true
