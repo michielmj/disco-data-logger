@@ -82,11 +82,13 @@ jobs:
         with:
           pattern: wheels-*
           merge-multiple: true
+          path: dist
 
       - name: Download sdist
         uses: actions/download-artifact@v4
         with:
           name: sdist
+          path: dist
 
       - name: Upload to PyPI (Trusted Publisher)
         uses: pypa/gh-action-pypi-publish@release/v1
