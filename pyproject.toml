@@ -70,7 +70,10 @@ environment = { PIP_ONLY_BINARY = "numpy,pyarrow", PIP_PREFER_BINARY = "1" }
 archs = ["AMD64"]
 
 [tool.cibuildwheel.linux]
-archs = ["x86_64", "aarch64"]
+archs = ["x86_64"]
+
+[tool.scikit-build.cmake.define]
+CMAKE_DOWNLOAD_TIMEOUT = 30
 
 [tool.scikit-build.cmake.define]
 PYBIND11_FINDPYTHON = true
