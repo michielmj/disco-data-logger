@@ -25,6 +25,13 @@ jobs:
           python-version: "3.12"
 
       - name: Build wheels
+        env:
+          CIBW_BUILD: "cp311-* cp312-* cp313-*"
+          CIBW_SKIP: "*-cp314-*"
+          CIBW_ARCHS_LINUX: "x86_64"            # 👈 disable aarch64 here
+          CIBW_MANYLINUX_X86_64_IMAGE: "manylinux2014"
+          CIBW_ENVIRONMENT: 'PIP_ONLY_BINARY="numpy,pyarrow" PIP_PREFER_BINARY="1"'
+          CIBW_TEST_ENVIRONMENT: 'PIP_ONLY_BINARY="numpy,pyarrow" PIP_PREFER_BINARY="1"'
         run: |
           python -m pip install -U pip cibuildwheel build
           # cibuildwheel reads settings from pyproject.toml ([tool.cibuildwheel])
