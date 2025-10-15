@@ -153,6 +153,7 @@ celerybeat.pid
 .env
 .envrc
 .venv
+.venv-*
 env/
 venv/
 ENV/
@@ -218,3 +219,6 @@ src/data_logger/_version.py
 
 # tmp segments generated in tests
 tmp_segments/
+
+# local scripts not to include
+scripts/

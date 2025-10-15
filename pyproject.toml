@@ -60,10 +60,15 @@ addopts = "-q"
 testpaths = ["tests"]
 
 [tool.cibuildwheel]
+build = "cp311-* cp312-* cp313-*"
 skip = "*-win32 *-cp313t-* *-cp314t-* *-cp314-*"
 test-command = "pytest -q {project}/tests"
 test-extras = ["dev", "parquet"]
-environment = { PIP_ONLY_BINARY = "numpy,pyarrow" }
+
+# enforce wheels-only (no sdists) in build and test venvs
+environment = { PIP_ONLY_BINARY = "numpy,pyarrow", PIP_PREFER_BINARY = "1" }
+test-environment = { PIP_ONLY_BINARY = "numpy,pyarrow", PIP_PREFER_BINARY = "1" }
+
 
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]
