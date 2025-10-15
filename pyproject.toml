@@ -66,9 +66,11 @@ test-command = "pytest -q {project}/tests"
 test-extras = ["dev", "parquet"]
 environment = { PIP_ONLY_BINARY = "numpy,pyarrow", PIP_PREFER_BINARY = "1" }
 
-
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]
+
+[tool.cibuildwheel.linux]
+archs = ["x86_64", "aarch64"]
 
 [tool.scikit-build.cmake.define]
 PYBIND11_FINDPYTHON = true
