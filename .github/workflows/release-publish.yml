@@ -3,7 +3,7 @@ name: Build & Publish (on Release)
 on:
   release:
     types: [published]  # only when a GitHub Release is published
-    workflow_dispatch: 
+  workflow_dispatch: 
 
 jobs:
   build-wheels:
