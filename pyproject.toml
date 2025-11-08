@@ -18,6 +18,7 @@ classifiers = [
 ]
 dependencies = [
   "numpy>=1.23",
+  "disco-sparse-array",
 ]
 
 [build-system]
