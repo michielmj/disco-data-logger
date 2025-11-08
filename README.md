@@ -28,12 +28,13 @@ It combines:
 
 ## ✨ Features
 
-- **Sparse vector logging** with index/value arrays (`uint32`, `float64`).
+- **Sparse vector logging** powered by [`sparse_array.Vector`](https://pypi.org/project/disco-sparse-array/).
 - **Fixed-point quantization** for compact and deterministic encoding.
 - **Buffered, lock-free write path** (ring buffer + writer thread).
 - **Zstandard compression** (vendored, no external dependencies).
 - **Segment rotation** for large simulation outputs.
 - **JSON metadata** for each stream (`organisation`, `model`, `experiment`, …).
+- **Periodic vector streams** that emit state snapshots or accumulator sums once per period.
 - **Optional Parquet export** for post-run analytics.
 - **MIT-licensed** and designed for in-cluster (on-disk/in-memory) use.
 
@@ -50,3 +51,13 @@ For Parquet export support:
 ```bash
 pip install "disco-data-logger[parquet]"
 ```
+
+---
+
+## 📚 Documentation
+
+- [Periodic vector stream logging](docs/periodic_vector_stream.md) – step-by-step guide for
+  configuring `periodicity`, choosing between `state` and `accumulator` modes, and verifying
+  the emitted sparse data.
+- [ENGINEERING_SPEC.md](ENGINEERING_SPEC.md) – project history, motivation, and architectural
+  overview.

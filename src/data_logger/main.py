@@ -15,15 +15,15 @@ License: MIT
 """
 
 from __future__ import annotations
-from pathlib import Path
-from typing import Any, Dict, Iterable, Tuple
 import json
-import numpy as np
+from pathlib import Path
+from typing import Any, Dict, Iterable, Literal, Tuple
 
-from typing import Any, Iterable, Tuple
+import numpy as np
 
 # Import the pybind11 core module
 from ._core import LoggerCore, ScalePair, decode_segment_file_with_scales
+from .periodic import PeriodicVectorStream
 
 
 class DataLogger:
@@ -168,6 +168,25 @@ class DataLogger:
             for sid, epoch, idx, vals in recs:
                 yield int(sid), float(epoch), np.asarray(idx), np.asarray(vals)
 
+    def register_periodic_stream(
+        self,
+        labels: Dict[str, Any],
+        *,
+        epoch_scale: float,
+        value_scale: float,
+        periodicity: float = 1.0,
+        kind: Literal["state", "accumulator"] = "state",
+    ) -> "PeriodicVectorStream":
+        """Register a stream and wrap it in a :class:`PeriodicVectorStream` helper."""
+
+        labels_with_meta = {**labels, "periodicity": periodicity, "kind": kind}
+        stream_id = self.register_stream(
+            labels_with_meta,
+            epoch_scale=epoch_scale,
+            value_scale=value_scale,
+        )
+        return PeriodicVectorStream(self, stream_id, periodicity=periodicity, kind=kind)
+
     def to_parquet(self, out_path: str | Path) -> None:
         """
         Decode all segments into a Parquet file with schema:
@@ -213,3 +232,6 @@ class DataLogger:
 
     def __exit__(self, exc_type, exc, tb) -> None:
         self.close()
+
+
+
