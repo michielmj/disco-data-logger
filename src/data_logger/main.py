@@ -124,8 +124,15 @@ class DataLogger:
         values : np.ndarray[np.float64]
             Corresponding delta values.
         """
-        indices = np.asarray(indices, dtype=np.uint32)
-        values = np.asarray(values, dtype=np.float64)
+        # Copy the buffers so callers retain ownership of their inputs. The
+        # C++ core releases the GIL (see ``py::gil_scoped_release`` in
+        # ``_core.cpp``) while it encodes the payload and hands it to the
+        # background segment writer. During that window, other Python threads
+        # can run and mutate the original arrays. Taking copies gives the core a
+        # stable snapshot even when callers reuse or mutate their buffers right
+        # after invoking ``record``.
+        indices = np.array(indices, dtype=np.uint32, copy=True, order="C")
+        values = np.array(values, dtype=np.float64, copy=True, order="C")
 
         if indices.shape != values.shape:
             raise ValueError("indices and values must have the same length")
