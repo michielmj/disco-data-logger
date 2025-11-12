@@ -124,9 +124,9 @@ class DataLogger:
         values : np.ndarray[np.float64]
             Corresponding delta values.
         """
-        # Always copy the provided arrays to avoid relying on caller immutability.
-        indices = np.array(indices, dtype=np.uint32, copy=True)
-        values = np.array(values, dtype=np.float64, copy=True)
+        # Convert to the expected dtypes without forcing an extra copy when unnecessary.
+        indices = np.asarray(indices, dtype=np.uint32)
+        values = np.asarray(values, dtype=np.float64)
 
         if indices.shape != values.shape:
             raise ValueError("indices and values must have the same length")
