@@ -139,14 +139,14 @@ class PeriodicVectorStream:
 
         if self._acc_current_period != period_index:
             self._acc_current_period = period_index
-            self._accumulator_vector = vector if vector.indices.size else None
+            self._accumulator_vector = vector.copy() if vector.indices.size else None
             return
 
         if vector.indices.size == 0:
             return
 
         if self._accumulator_vector is None:
-            self._accumulator_vector = vector
+            self._accumulator_vector = vector.copy()
             return
 
         self._accumulator_vector += vector
