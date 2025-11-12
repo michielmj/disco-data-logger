@@ -15,15 +15,15 @@ License: MIT
 """
 
 from __future__ import annotations
-from pathlib import Path
-from typing import Any, Dict, Iterable, Tuple
 import json
-import numpy as np
+from pathlib import Path
+from typing import Any, Dict, Iterable, Literal, Tuple
 
-from typing import Any, Iterable, Tuple
+import numpy as np
 
 # Import the pybind11 core module
 from ._core import LoggerCore, ScalePair, decode_segment_file_with_scales
+from .periodic import PeriodicVectorStream
 
 
 class DataLogger:
@@ -124,8 +124,15 @@ class DataLogger:
         values : np.ndarray[np.float64]
             Corresponding delta values.
         """
-        indices = np.asarray(indices, dtype=np.uint32)
-        values = np.asarray(values, dtype=np.float64)
+        # Copy the buffers so callers retain ownership of their inputs. The
+        # C++ core releases the GIL (see ``py::gil_scoped_release`` in
+        # ``_core.cpp``) while it encodes the payload and hands it to the
+        # background segment writer. During that window, other Python threads
+        # can run and mutate the original arrays. Taking copies gives the core a
+        # stable snapshot even when callers reuse or mutate their buffers right
+        # after invoking ``record``.
+        indices = np.array(indices, dtype=np.uint32, copy=True, order="C")
+        values = np.array(values, dtype=np.float64, copy=True, order="C")
 
         if indices.shape != values.shape:
             raise ValueError("indices and values must have the same length")
@@ -167,6 +174,25 @@ class DataLogger:
             recs = decode_segment_file_with_scales(str(seg), self._scales_map_for_cpp())
             for sid, epoch, idx, vals in recs:
                 yield int(sid), float(epoch), np.asarray(idx), np.asarray(vals)
+
+    def register_periodic_stream(
+        self,
+        labels: Dict[str, Any],
+        *,
+        epoch_scale: float,
+        value_scale: float,
+        periodicity: float = 1.0,
+        kind: Literal["state", "accumulator"] = "state",
+    ) -> "PeriodicVectorStream":
+        """Register a stream and wrap it in a :class:`PeriodicVectorStream` helper."""
+
+        labels_with_meta = {**labels, "periodicity": periodicity, "kind": kind}
+        stream_id = self.register_stream(
+            labels_with_meta,
+            epoch_scale=epoch_scale,
+            value_scale=value_scale,
+        )
+        return PeriodicVectorStream(self, stream_id, periodicity=periodicity, kind=kind)
 
     def to_parquet(self, out_path: str | Path) -> None:
         """
@@ -213,3 +239,6 @@ class DataLogger:
 
     def __exit__(self, exc_type, exc, tb) -> None:
         self.close()
+
+
+
