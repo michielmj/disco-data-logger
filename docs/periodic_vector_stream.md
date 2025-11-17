@@ -2,7 +2,7 @@
 
 Periodic vector streams make it easy to capture **sparse simulation measurements** exactly
 once per logical period even when your system emits many intermediate updates. Each logged
-period stores a [`sparse_array.Vector`](https://pypi.org/project/disco-sparse-array/) so the
+period stores a [`graphblas.Vector`](https://pypi.org/project/python-graphblas/) so the
 segment files stay compact while preserving sparsity information.
 
 This guide walks through:
@@ -38,13 +38,13 @@ systems to understand how each record was produced.
 
 ## 2. How epochs map to periods
 
-Each call to `record(epoch, vector)` computes the **period index** as
+Each call to `record_vector(epoch, vector)` computes the **period index** as
 `floor(epoch / periodicity)`.
 
 - For **state** streams, the vector is cached and flushed when the next period boundary is
   crossed. A period with no updates inherits the most recent cached state.
-- For **accumulator** streams, vectors are added together within the same period using the
-  `Vector.__iadd__` implementation. Empty periods emit an empty vector so gaps stay visible.
+- For **accumulator** streams, vectors are added together within the same period using
+  `Vector.__iadd__`. Empty periods emit an empty vector so gaps stay visible.
 
 Closing the stream with `close(final_epoch)` ensures every relevant period boundary is
 flushed. States emit through the period containing `final_epoch`; accumulators emit every
@@ -56,7 +56,7 @@ period strictly before that boundary.
 
 ```python
 from data_logger import DataLogger
-from sparse_array import Vector
+from graphblas import Vector
 import numpy as np
 
 logger = DataLogger("/tmp/run")
@@ -69,11 +69,12 @@ stream = logger.register_periodic_stream(
 )
 
 # Record sparse measurements
-vector = Vector(
-    indices=np.array([0, 3], dtype=np.uint32),
+vector = Vector.from_coo(
+    indices=np.array([0, 3], dtype=np.int64),
     values=np.array([2500, 7050], dtype=np.float64),
+    size=4,  # at least one plus the max index
 )
-stream.record(epoch=0.3, vector=vector)
+stream.record_vector(epoch=0.3, vector=vector)
 
 # Later…
 stream.close(final_epoch=10.0)
@@ -82,9 +83,10 @@ logger.close()
 
 **Key takeaways:**
 
-- Always pass a `Vector` instance. The class guarantees sorted indices and compatible
-  shapes, enabling efficient in-place accumulation.
-- State streams perform a single `.copy()` when the period boundary advances. Accumulator
+- Prefer `record_vector` when working with `graphblas.Vector` inputs. Use `record` if you
+  already have NumPy `indices` (``int64``) and `values` (``float64``) arrays and want the
+  helper to construct the vector for you.
+- State streams perform a single `.dup()` when the period boundary advances. Accumulator
   streams reuse the vector reference whenever possible and rely on `Vector.__iadd__` for
   efficient summation.
 - Call `close` even if the final period received no updates. The logger writes empty

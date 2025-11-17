@@ -20,10 +20,11 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, Literal, Tuple
 
 import numpy as np
+from graphblas import Vector
 
 # Import the pybind11 core module
 from ._core import LoggerCore, ScalePair, decode_segment_file_with_scales
-from .periodic import PeriodicVectorStream
+from .periodic import PeriodicStream
 
 
 class DataLogger:
@@ -119,7 +120,7 @@ class DataLogger:
             Stream identifier obtained from `register_stream`.
         epoch : float
             Simulation time (double).
-        indices : np.ndarray[np.uint32]
+        indices : np.ndarray[np.int64]
             Array of indices of changed elements.
         values : np.ndarray[np.float64]
             Corresponding delta values.
@@ -131,7 +132,7 @@ class DataLogger:
         # can run and mutate the original arrays. Taking copies gives the core a
         # stable snapshot even when callers reuse or mutate their buffers right
         # after invoking ``record``.
-        indices = np.array(indices, dtype=np.uint32, copy=True, order="C")
+        indices = np.array(indices, dtype=np.int64, copy=True, order="C")
         values = np.array(values, dtype=np.float64, copy=True, order="C")
 
         if indices.shape != values.shape:
@@ -143,6 +144,23 @@ class DataLogger:
             indices, values = indices[order], values[order]
 
         self._core.record(int(stream_id), float(epoch), indices, values)
+
+    def record_vector(self, stream_id: int, epoch: float, vector: Vector) -> None:
+        """
+        Convenience wrapper to record a :class:`graphblas.Vector` without manual
+        index/value extraction.
+        """
+
+        if not isinstance(vector, Vector):
+            raise TypeError("record_vector expects a graphblas.Vector")
+
+        indices, values = vector.to_coo()
+        self.record(
+            stream_id,
+            epoch,
+            np.array(indices, dtype=np.int64, copy=False),
+            np.array(values, dtype=np.float64, copy=False),
+        )
 
     # ----------------------------------------------------------------------
     # Closing and flushing
@@ -183,8 +201,8 @@ class DataLogger:
         value_scale: float,
         periodicity: float = 1.0,
         kind: Literal["state", "accumulator"] = "state",
-    ) -> "PeriodicVectorStream":
-        """Register a stream and wrap it in a :class:`PeriodicVectorStream` helper."""
+    ) -> "PeriodicStream":
+        """Register a stream and wrap it in a :class:`PeriodicStream` helper."""
 
         labels_with_meta = {**labels, "periodicity": periodicity, "kind": kind}
         stream_id = self.register_stream(
@@ -192,14 +210,14 @@ class DataLogger:
             epoch_scale=epoch_scale,
             value_scale=value_scale,
         )
-        return PeriodicVectorStream(self, stream_id, periodicity=periodicity, kind=kind)
+        return PeriodicStream(self, stream_id, periodicity=periodicity, kind=kind)
 
     def to_parquet(self, out_path: str | Path) -> None:
         """
         Decode all segments into a Parquet file with schema:
             stream_id : uint32
             epoch     : double
-            indices   : list<uint32>
+            indices   : list<int64>
             values    : list<double>
         """
 
@@ -216,14 +234,14 @@ class DataLogger:
         for sid, epoch, idx, vals in self.decode_all_segments():
             sids.append(np.uint32(sid))
             epochs.append(np.float64(epoch))
-            idx_list.append(idx.astype(np.uint32, copy=False))
+            idx_list.append(idx.astype(np.int64, copy=False))
             val_list.append(vals.astype(np.float64, copy=False))
 
         # build Arrow arrays/table using _pa / _pq (not pa/pq)
         table = _pa.table({
             "stream_id": _pa.array(sids, type=_pa.uint32()),
             "epoch": _pa.array(epochs, type=_pa.float64()),
-            "indices": _pa.array(idx_list, type=_pa.list_(_pa.uint32())),
+            "indices": _pa.array(idx_list, type=_pa.list_(_pa.int64())),
             "values": _pa.array(val_list, type=_pa.list_(_pa.float64())),
         })
 

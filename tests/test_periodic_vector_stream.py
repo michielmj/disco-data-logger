@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from data_logger import DataLogger
-from sparse_array import Vector
+from graphblas import Vector
 
 
 def test_periodic_vector_stream_state_and_accumulator(tmp_path):
@@ -37,11 +37,11 @@ def test_periodic_vector_stream_state_and_accumulator(tmp_path):
     ]
 
     for t in events:
-        indices = np.array([0], dtype=np.uint32)
+        indices = np.array([0], dtype=np.int64)
         values = np.array([t], dtype=np.float64)
-        vector = Vector(indices, values)
-        state.record(t, vector)
-        accum.record(t, vector)
+        vector = Vector.from_coo(indices, values, size=1)
+        state.record_vector(t, vector)
+        accum.record_vector(t, vector)
 
     state.close(final_epoch=5.0)
     accum.close(final_epoch=5.0)
