@@ -30,6 +30,9 @@ requires = [
 ]
 build-backend = "scikit_build_core.build"
 
+[mypy]
+ignore_missing_imports = true
+
 [tool.scikit-build]
 editable.mode = "redirect"
 wheel.packages = ["src/data_logger"]
