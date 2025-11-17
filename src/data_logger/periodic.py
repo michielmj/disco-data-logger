@@ -1,17 +1,17 @@
-"""Helpers for periodic sparse logging built on :mod:`sparse_array`."""
+"""Helpers for periodic sparse logging built on :mod:`graphblas`."""
 
 from __future__ import annotations
 
 from typing import Literal, TYPE_CHECKING
 
 import numpy as np
-from sparse_array import Vector
+from graphblas import Vector
 
 if TYPE_CHECKING:  # pragma: no cover - for type checking only
     from .main import DataLogger
 
 
-class PeriodicVectorStream:
+class PeriodicStream:
     """Reduce multiple sparse measurements to one record per period."""
 
     def __init__(
@@ -40,9 +40,7 @@ class PeriodicVectorStream:
         self._next_acc_period = 0
         self._acc_current_period: int | None = None
         self._accumulator_vector: Vector | None = None
-        self._empty_vector = Vector(
-            np.empty(0, dtype=np.uint32), np.empty(0, dtype=np.float64)
-        )
+        self._empty_vector = Vector.from_coo([], [], size=0, dtype=np.float64)
 
     @property
     def stream_id(self) -> int:
@@ -50,11 +48,28 @@ class PeriodicVectorStream:
 
         return self._stream_id
 
-    def record(self, epoch: float, vector: Vector) -> None:
+    def record(self, epoch: float, indices: np.ndarray, values: np.ndarray) -> None:
+        """Record one measurement using arrays, mirroring :meth:`DataLogger.record`."""
+
+        indices = np.array(indices, dtype=np.int64, copy=False)
+        values = np.array(values, dtype=np.float64, copy=False)
+
+        if indices.shape != values.shape:
+            raise ValueError("indices and values must have the same length")
+
+        if indices.size > 1 and not np.all(indices[1:] > indices[:-1]):
+            order = np.argsort(indices, kind="stable")
+            indices, values = indices[order], values[order]
+
+        size = int(indices.max()) + 1 if indices.size else 0
+        vector = Vector.from_coo(indices, values, size=size)
+        self.record_vector(epoch, vector)
+
+    def record_vector(self, epoch: float, vector: Vector) -> None:
         """Record one measurement and reduce it to the appropriate period."""
 
         if not isinstance(vector, Vector):
-            raise TypeError("periodic streams expect sparse_array.Vector inputs")
+            raise TypeError("periodic streams expect graphblas.Vector inputs")
 
         if self._kind == "state":
             self._record_state(epoch, vector)
@@ -77,11 +92,12 @@ class PeriodicVectorStream:
                 break
 
             vector = self._state_vector
+            idx, vals = vector.to_coo()
             self._logger.record(
                 self._stream_id,
                 boundary,
-                vector.indices,
-                vector.values,
+                np.asarray(idx, dtype=np.int64),
+                np.asarray(vals, dtype=np.float64),
             )
             self._next_state_period += 1
 
@@ -93,7 +109,7 @@ class PeriodicVectorStream:
         """Cache the most recent state and emit completed periods."""
 
         self._emit_state_up_to(epoch, include_equal=False)
-        self._state_vector = vector.copy()
+        self._state_vector = vector.dup()
 
     # ------------------------------------------------------------------
     # Accumulator helpers
@@ -111,11 +127,12 @@ class PeriodicVectorStream:
             else:
                 vector = self._empty_vector
 
+            idx, vals = vector.to_coo()
             self._logger.record(
                 self._stream_id,
                 emit_period_index * self._periodicity,
-                vector.indices,
-                vector.values,
+                np.asarray(idx, dtype=np.int64),
+                np.asarray(vals, dtype=np.float64),
             )
             self._next_acc_period += 1
 
@@ -139,14 +156,14 @@ class PeriodicVectorStream:
 
         if self._acc_current_period != period_index:
             self._acc_current_period = period_index
-            self._accumulator_vector = vector.copy() if vector.indices.size else None
+            self._accumulator_vector = vector.dup() if vector.nvals else None
             return
 
-        if vector.indices.size == 0:
+        if vector.nvals == 0:
             return
 
         if self._accumulator_vector is None:
-            self._accumulator_vector = vector.copy()
+            self._accumulator_vector = vector.dup()
             return
 
         self._accumulator_vector += vector

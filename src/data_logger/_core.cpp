@@ -41,9 +41,9 @@ struct LoggerCore {
         return sid;
     }
 
-    // record(stream_id, epoch_double, idx:uint32[], vals:double[])
+    // record(stream_id, epoch_double, idx:int64[], vals:double[])
     void record(uint32_t stream_id, double epoch,
-                py::array_t<uint32_t, py::array::c_style | py::array::forcecast> idx,
+                py::array_t<int64_t, py::array::c_style | py::array::forcecast> idx,
                 py::array_t<double,   py::array::c_style | py::array::forcecast> vals)
     {
         if (idx.size() != vals.size()) throw std::runtime_error("indices/values length mismatch");
@@ -57,7 +57,7 @@ struct LoggerCore {
         sm.last_epoch_tick = tick; sm.has_last = true;
 
         // Optional: ensure indices are sorted strictly increasing (cheap check, or sort if needed)
-        const uint32_t* pidx = idx.data();
+        const int64_t* pidx = idx.data();
         #ifndef NDEBUG
         for (ssize_t i=1;i<idx.size();++i) if (pidx[i] <= pidx[i-1]) throw std::runtime_error("indices must be strictly increasing per record");
         #endif
@@ -118,7 +118,7 @@ py::list decode_segment_file_with_scales(const std::string& path,
         // Parse all records in this frame (records may be from different streams)
         FrameDecoder dec(frame_out.data(), frame_out.size());
         uint32_t sid; int64_t d_tick;
-        std::vector<uint32_t> idx; std::vector<double> vals;
+        std::vector<int64_t> idx; std::vector<double> vals;
 
         while (true) {
             // We need the value_scale for this sid to parse the values

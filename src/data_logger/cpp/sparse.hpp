@@ -7,7 +7,7 @@
 namespace data_logger {
 
 // Encode indices as: n, first_idx (absolute), then gaps (idx[i]-idx[i-1]-1)
-inline void encode_u32_gaps(std::vector<uint8_t>& buf, const uint32_t* idx, size_t n){
+inline void encode_i64_gaps(std::vector<uint8_t>& buf, const int64_t* idx, size_t n){
     data_logger::write_varu64(buf, n);
     if (n==0) return;
     data_logger::write_varu64(buf, idx[0]);
@@ -18,15 +18,15 @@ inline void encode_u32_gaps(std::vector<uint8_t>& buf, const uint32_t* idx, size
 }
 
 // Decode back to absolute indices
-inline bool decode_u32_gaps(const uint8_t*& p, const uint8_t* end, std::vector<uint32_t>& out){
+inline bool decode_i64_gaps(const uint8_t*& p, const uint8_t* end, std::vector<int64_t>& out){
     uint64_t n; p = data_logger::read_varu64(p,end,n); if(!p) return false;
     out.resize(n);
     if (n==0) return true;
     uint64_t v; p = data_logger::read_varu64(p,end,v); if(!p) return false;
-    out[0] = (uint32_t)v;
+    out[0] = (int64_t)v;
     for (size_t i=1;i<n;++i){
         p = data_logger::read_varu64(p,end,v); if(!p) return false;
-        out[i] = (uint32_t)( (uint64_t)out[i-1] + 1 + v );
+        out[i] = (int64_t)( (uint64_t)out[i-1] + 1 + v );
     }
     return true;
 }
