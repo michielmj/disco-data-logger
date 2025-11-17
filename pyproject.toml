@@ -65,10 +65,10 @@ testpaths = ["tests"]
 
 [tool.cibuildwheel]
 build = "cp311-* cp312-* cp313-*"
-skip = "*-win32 *-cp313t-* *-cp314t-* *-cp314-*"
+skip = "*-win32 *-cp313t-* *-cp314t-* *-cp314-* *-musllinux_*"
 test-command = "pytest -q {project}/tests"
 test-extras = ["dev", "parquet"]
-environment = { PIP_ONLY_BINARY = "numpy,pyarrow,llvmlite", PIP_PREFER_BINARY = "1" }
+environment = { PIP_ONLY_BINARY = "numpy,pyarrow,llvmlite,numba", PIP_PREFER_BINARY = "1" }
 
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]
