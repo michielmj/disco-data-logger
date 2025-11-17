@@ -26,11 +26,11 @@ jobs:
       - name: Build wheels
         env:
           CIBW_BUILD: "cp311-* cp312-* cp313-*"
-          CIBW_SKIP: "*-cp314-*"
+          CIBW_SKIP: "*-cp314-* *-musllinux_*"
           CIBW_ARCHS_LINUX: "x86_64"            # 👈 disable aarch64 here
           CIBW_MANYLINUX_X86_64_IMAGE: "manylinux2014"
-          CIBW_ENVIRONMENT: 'PIP_ONLY_BINARY="numpy,pyarrow" PIP_PREFER_BINARY="1"'
-          CIBW_TEST_ENVIRONMENT: 'PIP_ONLY_BINARY="numpy,pyarrow" PIP_PREFER_BINARY="1"'
+          CIBW_ENVIRONMENT: 'PIP_ONLY_BINARY="numpy,pyarrow,llvmlite,numba" PIP_PREFER_BINARY="1"'
+          CIBW_TEST_ENVIRONMENT: 'PIP_ONLY_BINARY="numpy,pyarrow,llvmlite,numbe" PIP_PREFER_BINARY="1"'
         run: python -m cibuildwheel --output-dir wheelhouse
 
       - name: Upload wheels
