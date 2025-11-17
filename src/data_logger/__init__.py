@@ -7,7 +7,7 @@ and Monte Carlo simulations.
 """
 
 from .main import DataLogger
-from .periodic import PeriodicVectorStream
+from .periodic import PeriodicStream
 
 # Expose package version (set via setuptools-scm write_to)
 try:
@@ -15,4 +15,4 @@ try:
 except Exception:  # pragma: no cover
     __version__ = "0.0.0"
 
-__all__ = ["DataLogger", "PeriodicVectorStream"]
+__all__ = ["DataLogger", "PeriodicStream"]

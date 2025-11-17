@@ -18,7 +18,7 @@ classifiers = [
 ]
 dependencies = [
   "numpy>=1.23",
-  "disco-sparse-array>=0.1.1",
+  "python-graphblas>=2025.2.0",
 ]
 
 [build-system]
@@ -29,6 +29,9 @@ requires = [
   "setuptools-scm>=8",
 ]
 build-backend = "scikit_build_core.build"
+
+[tool.mypy]
+ignore_missing_imports = true
 
 [tool.scikit-build]
 editable.mode = "redirect"

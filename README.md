@@ -28,7 +28,7 @@ It combines:
 
 ## ✨ Features
 
-- **Sparse vector logging** powered by [`sparse_array.Vector`](https://pypi.org/project/disco-sparse-array/).
+- **Sparse vector logging** powered by [`graphblas.Vector`](https://pypi.org/project/python-graphblas/).
 - **Fixed-point quantization** for compact and deterministic encoding.
 - **Buffered, lock-free write path** (ring buffer + writer thread).
 - **Zstandard compression** (vendored, no external dependencies).
