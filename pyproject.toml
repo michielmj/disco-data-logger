@@ -30,7 +30,7 @@ requires = [
 ]
 build-backend = "scikit_build_core.build"
 
-[mypy]
+[tool.mypy]
 ignore_missing_imports = true
 
 [tool.scikit-build]
