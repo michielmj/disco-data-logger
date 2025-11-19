@@ -36,9 +36,9 @@ class DataLogger:
     def __init__(
         self,
         segments_dir: str | Path,
-        ring_bytes: int = 1 << 27,     # 128 MB ring buffer
-        rotate_bytes: int = 256 << 20, # 256 MB per segment file
-        zstd_level: int = 1,           # lightweight compression
+        ring_bytes: int = 1 << 27,      # 128 MB ring buffer
+        rotate_bytes: int = 256 << 20,  # 256 MB per segment file
+        zstd_level: int = 1,            # lightweight compression
     ):
         self._segdir = Path(segments_dir)
         self._segdir.mkdir(parents=True, exist_ok=True)
@@ -224,10 +224,9 @@ class DataLogger:
         try:
             import pyarrow as _pa  # type: ignore[import-untyped]
             import pyarrow.parquet as _pq  # type: ignore[import-untyped]
-        except Exception as exc:
+        except Exception as exc:  # pragma: no cover - dependency should exist
             raise RuntimeError(
-                "pyarrow is required for Parquet export. "
-                "Install with `pip install disco-data-logger[parquet]`."
+                "pyarrow is required for Parquet export and should be installed alongside disco-data-logger."
             ) from exc
 
         sids, epochs, idx_list, val_list = [], [], [], []
@@ -257,6 +256,3 @@ class DataLogger:
 
     def __exit__(self, exc_type, exc, tb) -> None:
         self.close()
-
-
-

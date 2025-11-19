@@ -6,6 +6,7 @@ High-performance, stream-based logger for sparse numerical data in discrete-even
 and Monte Carlo simulations.
 """
 
+from .collector import Collector
 from .main import DataLogger
 from .periodic import PeriodicStream
 
@@ -15,4 +16,4 @@ try:
 except Exception:  # pragma: no cover
     __version__ = "0.0.0"
 
-__all__ = ["DataLogger", "PeriodicStream"]
+__all__ = ["Collector", "DataLogger", "PeriodicStream"]
