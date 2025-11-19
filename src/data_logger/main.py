@@ -42,7 +42,12 @@ class DataLogger:
     ):
         self._segdir = Path(segments_dir)
         self._segdir.mkdir(parents=True, exist_ok=True)
-        (self._segdir / "streams").mkdir(exist_ok=True)
+        self._streams_dir = self._segdir / "streams"
+        self._streams_dir.mkdir(exist_ok=True)
+        self._manifest_path = self._streams_dir / "manifest.json"
+        self._control_dir = self._segdir / "control"
+        self._control_dir.mkdir(exist_ok=True)
+        self._expected_streams_path = self._control_dir / "expected_streams.json"
 
         # C++ backend
         self._core = LoggerCore(
@@ -55,6 +60,9 @@ class DataLogger:
         # Internal registries
         self._scales: dict[int, tuple[float, float]] = {}
         self._labels: dict[int, dict[str, Any]] = {}
+
+        self._write_manifest()
+        self._write_expected_streams()
 
     # ----------------------------------------------------------------------
     # Stream management
@@ -89,14 +97,8 @@ class DataLogger:
         self._scales[sid] = (epoch_scale, value_scale)
         self._labels[sid] = dict(labels)
 
-        meta = {
-            **labels,
-            "stream_id": sid,
-            "epoch_scale": epoch_scale,
-            "value_scale": value_scale,
-        }
-        with open(self._segdir / "streams" / f"{sid:08d}.json", "w", encoding="utf-8") as fh:
-            json.dump(meta, fh, ensure_ascii=False, separators=(",", ":"))
+        self._write_manifest()
+        self._write_expected_streams()
 
         return sid
 
@@ -188,10 +190,31 @@ class DataLogger:
         Stream over all decoded records across all segments.
         Returns tuples (stream_id, epoch, indices, values).
         """
-        for seg in sorted(self._segdir.glob("*.seg.zst")):
+        for seg in sorted(self._segdir.glob("*.seg")):
             recs = decode_segment_file_with_scales(str(seg), self._scales_map_for_cpp())
             for sid, epoch, idx, vals in recs:
                 yield int(sid), float(epoch), np.asarray(idx), np.asarray(vals)
+
+    def _write_manifest(self) -> None:
+        manifest = []
+        for sid in sorted(self._labels):
+            labels = self._labels[sid]
+            epoch_scale, value_scale = self._scales[sid]
+            entry = {
+                **labels,
+                "stream_id": sid,
+                "epoch_scale": epoch_scale,
+                "value_scale": value_scale,
+            }
+            manifest.append(entry)
+
+        with open(self._manifest_path, "w", encoding="utf-8") as fh:
+            json.dump(manifest, fh, ensure_ascii=False, separators=(",", ":"))
+
+    def _write_expected_streams(self) -> None:
+        streams = sorted(self._labels)
+        with open(self._expected_streams_path, "w", encoding="utf-8") as fh:
+            json.dump(streams, fh, ensure_ascii=False, separators=(",", ":"))
 
     def register_periodic_stream(
         self,

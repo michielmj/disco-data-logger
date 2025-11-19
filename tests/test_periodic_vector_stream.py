@@ -73,8 +73,9 @@ def test_periodic_vector_stream_state_and_accumulator(tmp_path):
     assert acc_values == pytest.approx(expected_acc_values)
 
     # Metadata emitted during registration includes periodicity and kind markers.
-    meta_path = tmp_path / "segments_periodic" / "streams" / f"{state.stream_id:08d}.json"
+    meta_path = tmp_path / "segments_periodic" / "streams" / "manifest.json"
     with meta_path.open("r", encoding="utf-8") as fh:
-        metadata = json.load(fh)
+        manifest = json.load(fh)
+    metadata = next(item for item in manifest if item["stream_id"] == state.stream_id)
     assert metadata["periodicity"] == pytest.approx(1.0)
     assert metadata["kind"] == "state"
