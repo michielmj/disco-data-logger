@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -65,6 +66,25 @@ class Collector:
         self._flush_buffer(writer, buffer)
         return True
 
+    def cleanup(
+        self,
+        *,
+        keep_meta: bool = True,
+        wait_for_done: bool = True,
+        backoff: int = 100,
+        timeout: int | None = 60_000,
+    ) -> bool:
+        """Remove segment files (and optionally metadata) for all logger paths."""
+
+        if wait_for_done and not self._wait_for_done(self._paths, backoff, timeout):
+            return False
+
+        for base in self._paths:
+            self._remove_segments(base)
+            if not keep_meta:
+                self._remove_metadata(base)
+        return True
+
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
@@ -113,6 +133,20 @@ class Collector:
                 return False
             time.sleep(sleep_s)
         return True
+
+    def _remove_segments(self, base: Path) -> None:
+        if not base.exists():
+            return
+        for seg_file in base.glob("*.seg.zst"):
+            try:
+                seg_file.unlink()
+            except FileNotFoundError:
+                continue
+
+    def _remove_metadata(self, base: Path) -> None:
+        streams_dir = base / "streams"
+        if streams_dir.is_dir():
+            shutil.rmtree(streams_dir, ignore_errors=True)
 
     def _decode_logger(
         self,

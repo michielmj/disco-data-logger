@@ -50,6 +50,9 @@ def test_collector_times_out_without_done(tmp_path):
     sid = elog.register_stream({"entity": "wait"}, epoch_scale=1.0, value_scale=1.0)
     elog.record(sid, 0.1, np.array([0], dtype=np.int64), np.array([1.0], dtype=np.float64))
     elog.close()
+    done_path = base / "_DONE"
+    if done_path.exists():
+        done_path.unlink()
 
     writer, sink = _make_writer()
     collector = Collector([base])
@@ -57,3 +60,48 @@ def test_collector_times_out_without_done(tmp_path):
     writer.close()
     reader = pa.ipc.open_stream(sink.getvalue())
     assert reader.read_all().num_rows == 0
+
+
+def test_collector_cleanup_removes_segments(tmp_path):
+    base = tmp_path / "segments"
+    elog = DataLogger(base)
+    sid = elog.register_stream({"entity": "cleanup"}, epoch_scale=1.0, value_scale=1.0)
+    elog.record(sid, 0.1, np.array([0], dtype=np.int64), np.array([1.0], dtype=np.float64))
+    elog.close()
+    (base / "_DONE").touch()
+
+    assert any(base.glob("*.seg.zst"))
+
+    collector = Collector([base])
+    assert collector.cleanup() is True
+    assert not any(base.glob("*.seg.zst"))
+    assert (base / "streams").is_dir()
+
+
+def test_collector_cleanup_removes_metadata_when_requested(tmp_path):
+    base = tmp_path / "segments"
+    elog = DataLogger(base)
+    sid = elog.register_stream({"entity": "cleanup"}, epoch_scale=1.0, value_scale=1.0)
+    elog.record(sid, 0.1, np.array([0], dtype=np.int64), np.array([1.0], dtype=np.float64))
+    elog.close()
+    (base / "_DONE").touch()
+
+    collector = Collector([base])
+    assert collector.cleanup(keep_meta=False, wait_for_done=False) is True
+    assert not any(base.glob("*.seg.zst"))
+    assert not (base / "streams").exists()
+
+
+def test_collector_cleanup_waits_for_done(tmp_path):
+    base = tmp_path / "segments"
+    elog = DataLogger(base)
+    sid = elog.register_stream({"entity": "cleanup"}, epoch_scale=1.0, value_scale=1.0)
+    elog.record(sid, 0.1, np.array([0], dtype=np.int64), np.array([1.0], dtype=np.float64))
+    elog.close()
+    done_path = base / "_DONE"
+    if done_path.exists():
+        done_path.unlink()
+
+    collector = Collector([base])
+    assert collector.cleanup(timeout=10, backoff=1) is False
+    assert any(base.glob("*.seg.zst"))
