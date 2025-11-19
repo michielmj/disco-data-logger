@@ -108,8 +108,6 @@ private:
     FILE*     fp_ = nullptr;
     size_t    written_in_seg_ = 0;
     uint64_t  seg_seq_ = 0;
-    std::string current_tmp_path_;
-    std::string current_final_path_;
 
     std::vector<uint8_t> out_buf_;  // compressed frame buffer
     std::vector<uint8_t> blob_;     // dequeued raw frame
@@ -119,17 +117,14 @@ private:
         if (fp_) close_segment_();
 
         char path[1024];
-        // 00000.seg, 00001.seg, ...
-        std::snprintf(path, sizeof(path), "%s/%05llu.seg",
+        // 00000.seg.zst, 00001.seg.zst, ...
+        std::snprintf(path, sizeof(path), "%s/%05llu.seg.zst",
                       cfg_.dir.c_str(),
                       static_cast<unsigned long long>(seg_seq_++));
 
-        current_final_path_ = path;
-        current_tmp_path_ = current_final_path_ + ".tmp";
-
-        fp_ = std::fopen(current_tmp_path_.c_str(), "wb");
+        fp_ = std::fopen(path, "wb");
         if (!fp_) {
-            throw std::runtime_error(std::string("Failed to open segment file: ") + current_tmp_path_);
+            throw std::runtime_error(std::string("Failed to open segment file: ") + path);
         }
         written_in_seg_ = 0;
     }
@@ -140,14 +135,6 @@ private:
         portable_fsync(fp_, cfg_.fsync_on_close);
         std::fclose(fp_);
         fp_ = nullptr;
-
-        if (!current_tmp_path_.empty() && !current_final_path_.empty()) {
-            if (std::rename(current_tmp_path_.c_str(), current_final_path_.c_str()) != 0) {
-                throw std::runtime_error("Failed to finalize segment file by renaming tmp to seg");
-            }
-        }
-        current_tmp_path_.clear();
-        current_final_path_.clear();
     }
 
     void write_compressed_frame_(const uint8_t* src, size_t src_size) {
