@@ -21,6 +21,7 @@ from ._core import ScalePair, decode_segment_file_with_scales
 DONE_MARKER = "_DONE"
 DEFAULT_BATCH_SIZE = 2048
 
+
 class _ArrowWriter(Protocol):
     schema: pa.Schema | None
 
@@ -38,13 +39,13 @@ class Collector:
         self._batch_size = DEFAULT_BATCH_SIZE
 
     def collect(
-        self,
-        writer: _ArrowWriter,
-        *,
-        rule: Rule | None = None,
-        columns: Sequence[str] | None = None,
-        backoff: int = 100,
-        timeout: int | None = 60_000,
+            self,
+            writer: _ArrowWriter,
+            *,
+            rule: Rule | None = None,
+            columns: Sequence[str] | None = None,
+            backoff: int = 100,
+            timeout: int | None = 60_000,
     ) -> bool:
         """Decode selected streams and write them to ``writer``."""
 
@@ -67,12 +68,12 @@ class Collector:
         return True
 
     def cleanup(
-        self,
-        *,
-        keep_meta: bool = True,
-        wait_for_done: bool = True,
-        backoff: int = 100,
-        timeout: int | None = 60_000,
+            self,
+            *,
+            keep_meta: bool = True,
+            wait_for_done: bool = True,
+            backoff: int = 100,
+            timeout: int | None = 60_000,
     ) -> bool:
         """Remove segment files (and optionally metadata) for all logger paths."""
 
@@ -149,12 +150,12 @@ class Collector:
             shutil.rmtree(streams_dir, ignore_errors=True)
 
     def _decode_logger(
-        self,
-        base: Path,
-        selected_ids: Iterable[int],
-        meta_map: Dict[int, Dict[str, Any]],
-        writer: _ArrowWriter,
-        buffer: "_BatchBuffer",
+            self,
+            base: Path,
+            selected_ids: Iterable[int],
+            meta_map: Dict[int, Dict[str, Any]],
+            writer: _ArrowWriter,
+            buffer: "_BatchBuffer",
     ) -> None:
         selected_set = set(selected_ids)
         if not selected_set:
@@ -227,12 +228,12 @@ class _BatchBuffer:
         return self.size >= self.capacity > 0
 
     def append(
-        self,
-        stream_id: int,
-        epoch: float,
-        indices: np.ndarray,
-        values: np.ndarray,
-        meta: dict[str, Any],
+            self,
+            stream_id: int,
+            epoch: float,
+            indices: np.ndarray,
+            values: np.ndarray,
+            meta: dict[str, Any],
     ) -> None:
         self.stream_ids.append(stream_id)
         self.epochs.append(epoch)
