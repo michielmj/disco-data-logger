@@ -22,7 +22,7 @@ Each simulation entity or measurement can log its data independently through lab
 It combines:
 - A **C++/pybind11 core** for high-throughput buffering and compression.
 - **Python API** for easy stream registration and control.
-- Optional **Parquet export** for analysis and aggregation after runs.
+- Built-in **Parquet export** for analysis and aggregation after runs.
 
 ---
 
@@ -35,7 +35,7 @@ It combines:
 - **Segment rotation** for large simulation outputs.
 - **JSON metadata** for each stream (`organisation`, `model`, `experiment`, …).
 - **Periodic vector streams** that emit state snapshots or accumulator sums once per period.
-- **Optional Parquet export** for post-run analytics.
+- **Integrated Parquet export** for post-run analytics.
 - **MIT-licensed** and designed for in-cluster (on-disk/in-memory) use.
 
 ---
@@ -46,11 +46,7 @@ It combines:
 pip install disco-data-logger
 ```
 
-For Parquet export support:
-
-```bash
-pip install "disco-data-logger[parquet]"
-```
+`pyarrow` ships with the package, so Parquet export works out of the box.
 
 ---
 

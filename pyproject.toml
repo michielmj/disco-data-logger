@@ -19,6 +19,8 @@ classifiers = [
 dependencies = [
   "numpy>=1.23",
   "python-graphblas>=2025.2.0",
+  "disco-tools>=0.1",
+  "pyarrow>=14",
 ]
 
 [build-system]
@@ -53,9 +55,6 @@ dev = [
   "mypy>=1.10",
   "cibuildwheel>=2.20",
   "pybind11-stubgen>=2.5",
-]
-parquet = [
-  "pyarrow>=14",
 ]
 
 [tool.pytest.ini_options]
