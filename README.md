@@ -60,3 +60,26 @@ pip install disco-data-logger
   the emitted sparse data.
 - [ENGINEERING_SPEC.md](ENGINEERING_SPEC.md) – project history, motivation, and architectural
   overview.
+
+---
+
+## 🛠️ Development
+
+Set up a virtual environment (for example, `python -m venv .venv && source .venv/bin/activate`),
+then install the project in editable mode with its development extras:
+
+```bash
+pip install -e '.[dev]'
+```
+
+> [!NOTE]
+> The `tools` namespace is provided by the separate [`disco-tools`](https://pypi.org/project/disco-tools/)
+> dependency. After installing it for the first time you must deactivate and reactivate your
+> environment (e.g., `deactivate` followed by `source .venv/bin/activate`) so that `pytest` can
+> discover the package properly.
+
+Once the environment is ready, run the unit tests with:
+
+```bash
+pytest
+```
