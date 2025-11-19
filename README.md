@@ -36,6 +36,7 @@ It combines:
 - **JSON metadata** for each stream (`organisation`, `model`, `experiment`, …).
 - **Periodic vector streams** that emit state snapshots or accumulator sums once per period.
 - **Integrated Parquet export** for post-run analytics.
+- **Arrow-based collector** to filter finished loggers and emit RecordBatches directly.
 - **MIT-licensed** and designed for in-cluster (on-disk/in-memory) use.
 
 ---
@@ -52,6 +53,8 @@ pip install disco-data-logger
 
 ## 📚 Documentation
 
+- [Collector](docs/collector.md) – decode completed loggers, filter streams with
+  `label_selector`, and write Arrow `RecordBatch` outputs efficiently.
 - [Periodic vector stream logging](docs/periodic_vector_stream.md) – step-by-step guide for
   configuring `periodicity`, choosing between `state` and `accumulator` modes, and verifying
   the emitted sparse data.
