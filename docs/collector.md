@@ -76,6 +76,21 @@ Before decoding any `.seg.zst` files the collector waits for a `_DONE` file to a
 selected logger directory. The wait uses the `backoff` interval between checks and respects the
 `timeout` limit. Passing `timeout=None` disables the deadline entirely.
 
+## Cleaning up collected runs
+
+After a run has been collected you can reclaim disk space using `Collector.cleanup`. By default it
+removes only the `.seg.zst` segment files (keeping label JSON and the `streams/` directory) once all
+paths contain the `_DONE` marker. The method accepts the same `backoff` and `timeout` arguments as
+`collect`, plus two cleanup-specific options:
+
+- `keep_meta=True` keeps the metadata and only removes the segment files. Set it to `False` if you
+  also want the label JSON files and the entire `streams/` directory removed.
+- `wait_for_done=True` ensures cleanup does not start until every logger path contains a `_DONE`
+  marker. Set it to `False` when you need to purge incomplete runs regardless of their state.
+
+The method returns `True` if every path was processed (and, when `wait_for_done=True`, the `_DONE`
+markers were found before hitting the timeout) and `False` otherwise.
+
 ## Writers
 
 `Collector.collect` accepts any object that exposes a `schema` attribute (or `None`) and a
