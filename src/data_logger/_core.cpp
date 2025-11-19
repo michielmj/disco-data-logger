@@ -18,13 +18,15 @@ struct LoggerCore {
     RingBuffer rb;
     std::unique_ptr<SegmentWriter> writer;
     FrameEncoder enc;
+    std::string out_dir;
+    bool done_written = false;
 
     // stream_id -> meta
     std::unordered_map<uint32_t, StreamMeta> streams;
     uint32_t next_stream_id = 1; // 0 is reserved (unused)
 
     LoggerCore(const std::string& dir, size_t ring_bytes, size_t rotate_bytes, int zstd_level)
-        : rb(ring_bytes)
+        : rb(ring_bytes), out_dir(dir)
     {
         SegmentWriterConfig cfg;
         cfg.dir = dir; cfg.rotate_bytes = rotate_bytes; cfg.zstd_level = zstd_level;
@@ -72,7 +74,15 @@ struct LoggerCore {
     }
 
     void close(){
-        if (writer){ writer->stop_and_join(); writer.reset(); }
+        if (writer){
+            writer->stop_and_join();
+            writer.reset();
+            if (!done_written){
+                std::ofstream done(out_dir + "/_DONE", std::ios::binary);
+                done.close();
+                done_written = true;
+            }
+        }
     }
 };
 
