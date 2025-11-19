@@ -224,10 +224,9 @@ class DataLogger:
         try:
             import pyarrow as _pa  # type: ignore[import-untyped]
             import pyarrow.parquet as _pq  # type: ignore[import-untyped]
-        except Exception as exc:
+        except Exception as exc:  # pragma: no cover - dependency should exist
             raise RuntimeError(
-                "pyarrow is required for Parquet export. "
-                "Install with `pip install disco-data-logger[parquet]`."
+                "pyarrow is required for Parquet export and should be installed alongside disco-data-logger."
             ) from exc
 
         sids, epochs, idx_list, val_list = [], [], [], []

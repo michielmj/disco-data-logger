@@ -1,7 +1,7 @@
 # disco-data-logger — Engineering Spec
 
 ## 0. Context / Intent
-High-performance logging library for Disco simulations. Records **sparse vectors** (indices: uint32, values: float64) across many **streams** (entities/measures). Writes **zstd-compressed log segments** with **fixed-point quantization** to minimize overhead and size. Optional **Parquet** export.
+High-performance logging library for Disco simulations. Records **sparse vectors** (indices: uint32, values: float64) across many **streams** (entities/measures). Writes **zstd-compressed log segments** with **fixed-point quantization** to minimize overhead and size. Includes built-in **PyArrow** export and collector utilities for downstream analytics.
 
 ## 1. Goals (Requirements)
 - **Hot path speed**: zero/low-GIL path, buffered writer thread, minimal syscalls.
@@ -10,7 +10,8 @@ High-performance logging library for Disco simulations. Records **sparse vectors
 - **API (Python)**:
   - `DataLogger.register_stream(labels, epoch_scale, value_scale) -> stream_id`
   - `DataLogger.record(stream_id, epoch: float, indices: uint32[], values: float64[])`
-  - `DataLogger.to_parquet(path)` (optional feature)
+  - `DataLogger.to_parquet(path)` (PyArrow-backed)
+  - `Collector(paths).collect(writer, rule=None, columns=None, backoff=100, timeout=60000)`
 - **On-disk format**: rotating `.seg.zst` files (zstd-framed). One directory per run. Sidecar JSON files for stream labels and scales: `streams/<stream_id>.json`.
 - **Quantization**: fixed-point: `q = round(value / value_scale)` -> varint(ZigZag(q)). Epochs quantized by `epoch_scale` to integer ticks, then **delta** encoded varint(ZigZag(delta)).
 - **Indices encoding**: strictly increasing per record; encode `n`, then `first_idx`, then gaps `(idx[i] - idx[i-1] - 1)` as varints.
@@ -18,7 +19,7 @@ High-performance logging library for Disco simulations. Records **sparse vectors
 - **Storage lifecycle**: data is ephemeral; after reduction -> discard.
 - **Packaging**: PyPI project name `disco-data-logger`, import `data_logger`, source in `src/data_logger`.
 - **Build**: `scikit-build-core` + CMake; **vendored zstd** via `FetchContent` (static); optional system zstd.
-- **Type checking**: mypy-clean; `pyarrow` is **optional** and imported lazily only inside `to_parquet()`.
+- **Type checking**: mypy-clean; `pyarrow` is imported normally (ship dependency) so type checking covers collector utilities.
 
 ## 2. Non-goals
 - No external cloud storage/DB as primary sink.
@@ -72,7 +73,7 @@ class DataLogger:
 
     def record(stream_id: int, epoch: float, indices: np.ndarray[uint32], values: np.ndarray[float64]) -> None: ...
 
-    def to_parquet(self, out_path: str | Path) -> None:  # optional; lazy import pyarrow
+    def to_parquet(self, out_path: str | Path) -> None:  # ships with PyArrow
         # writes columns: stream_id:uint32, epoch:float64,
         # indices:list<uint32>, values:list<float64>
 
@@ -105,7 +106,7 @@ decode_segment_file_with_scales(std::string path,
 - **Compression**: zstd **level 1** by default; one record → one zstd frame (simple & crash-safe).
 - **Portability**: macOS uses `F_FULLFSYNC` fallback to `fsync`; Linux uses `fdatasync` if available; Windows uses `_commit`.
 - **Vendoring zstd**: `FetchContent` with `SOURCE_SUBDIR build/cmake`; prefer static lib; option to use system zstd.
-- **Optional PyArrow**: import inside `to_parquet()`; no top-level imports; mypy ignores untyped external package by avoiding import at module level.
+- **PyArrow dependency**: bundled by default, enabling Arrow writers without lazy-import shims.
 
 ## 7. Packaging / Build
 - `pyproject.toml`: scikit-build-core; pybind11; numpy headers; setuptools-scm versioning.
@@ -122,7 +123,7 @@ decode_segment_file_with_scales(std::string path,
 - Register + record minimal stream; verify `.seg.zst` exists and label JSON written.
 - Decode segments: assert tuple counts and round-trip `epoch` and indices; values within correct quantization tolerance (or reconstruct integers for exactness).
 - Backpressure: fill ring buffer with many records; ensure no crashes/deadlocks.
-- Parquet (when optional dep installed): file schema as expected, row counts match.
+- Parquet/Arrow exports (always available): file schema as expected, row counts match.
 
 ## 10. Performance targets (initial)
 - Single-thread record() sustained: ≥ 1–5 million records/minute on a modern laptop (zstd lvl 1, 256 MB rotate).
@@ -139,4 +140,4 @@ decode_segment_file_with_scales(std::string path,
 ## 12. Known constraints
 - Requires indices strictly increasing per record (Python wrapper sorts if needed).
 - First record per stream uses tick relative to 0 (not absolute epoch in file header).
-- PyArrow optional; to_parquet raises informative error if missing.
+- PyArrow required; Arrow features work out of the box.
