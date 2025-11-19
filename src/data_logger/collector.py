@@ -7,7 +7,7 @@ import time
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Sequence
+from typing import Any, Dict, Iterable, Protocol, Sequence
 
 import numpy as np
 import pyarrow as pa
@@ -20,7 +20,11 @@ from ._core import ScalePair, decode_segment_file_with_scales
 DONE_MARKER = "_DONE"
 DEFAULT_BATCH_SIZE = 2048
 
-Writer = RecordBatchFileWriter | RecordBatchStreamWriter
+class _ArrowWriter(Protocol):
+    schema: pa.Schema | None
+
+    def write_batch(self, batch: pa.RecordBatch) -> None:
+        ...
 
 
 class Collector:
@@ -34,7 +38,7 @@ class Collector:
 
     def collect(
         self,
-        writer: Writer,
+        writer: _ArrowWriter,
         *,
         rule: Rule | None = None,
         columns: Sequence[str] | None = None,
@@ -115,7 +119,7 @@ class Collector:
         base: Path,
         selected_ids: Iterable[int],
         meta_map: Dict[int, Dict[str, Any]],
-        writer: Writer,
+        writer: _ArrowWriter,
         buffer: "_BatchBuffer",
     ) -> None:
         selected_set = set(selected_ids)
@@ -154,7 +158,7 @@ class Collector:
             scales[int(sid)] = sp
         return scales
 
-    def _flush_buffer(self, writer: Writer, buffer: "_BatchBuffer") -> None:
+    def _flush_buffer(self, writer: _ArrowWriter, buffer: "_BatchBuffer") -> None:
         if buffer.size == 0:
             return
         arrays = buffer.to_arrow_arrays()
